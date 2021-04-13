@@ -1,2 +1,3 @@
 # SwiftOS
-An simulated OS, developed by python
+A simulated OS, developed by python
+## Process manager
