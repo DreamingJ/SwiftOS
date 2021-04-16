@@ -20,15 +20,17 @@ class PCB(object):
         self.priority = priority  # 0 is higher than 1
         self.msize = msize
         self.parent_id = -1
-        self.child_num = 0
+        self.child_pid_list = []    
         self.create_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         self.status = 'ready'
+
         self.tasklist = []
         for task in content:
             info = str.split(task)  
             if len(info) > 1:
                 info[1] = int(info[1])
             self.tasklist.append(info)  # example: [[printer, 18], [cpu, 170]]
+        self.current_task = -1
 
 
 class ProcessManager(object):
@@ -48,7 +50,7 @@ class ProcessManager(object):
         self.pcblist = []
         self.ready_quene = [[] for i in range(3)]
         self.waiting_quene = []
-        self.p_running = -1
+        self.p_running = None
         self.memory_manager=memory_manager
         self.time_slot=time_slot
         self.priority=priority
@@ -86,7 +88,7 @@ class ProcessManager(object):
             self.pcblist.append(child_pcb)
             self.ready_quene[child_pcb.priority].append(child_pcb.pid)
             self.pid_no += 1
-            self.pcblist[self.p_running].child_num += 1
+            self.pcblist[self.p_running].child_pid_list.
             print(f'[pid {self.pid_no}] process forked successfully by [pid {self.p_running}]' )
 
 
@@ -106,7 +108,15 @@ class ProcessManager(object):
 
     def timeout(self):
         """ 时间片用尽，running->ready/terminate """
-        
+        if self.p_running != -1:
+            # 如何表示任务是否已完成
+            if len(self.pcblist[self.p_running].command_quene) != :
+                """ TODO 任务已完成，正常结束进程 """
+            else:
+                self.pcblist[self.p_running].status = 'ready'
+                level = self.pcblist[self.p_running].priority
+                self.ready_quene[level].append(self.p_running)
+        self.dispatch()
 
     def io_wait(self, pid):
         """ 等待io事件，running->waiting """
