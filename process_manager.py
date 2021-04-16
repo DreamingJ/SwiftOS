@@ -6,6 +6,13 @@ import time
 import copy
 import threading
 
+""" 几个可能问题：
+TODO
+        mem_manager没被import就直接用吗？
+        .pc的逻辑可以被优化吗？
+        timeout函数逻辑放哪里
+"""
+
 
 class PCB(object):
     """ ProcessControlBlock
@@ -109,9 +116,10 @@ class ProcessManager(object):
     def timeout(self):
         """ 时间片用尽，running->ready/terminate """
         if self.p_running:
-            # 如何表示任务是否已完成
-            if len(self.p_running.command_quene) != self.p_running.current_task:
-                """ TODO 该条批处理指令已完成 """
+            # 当前是否执行到进程的最后一条任务
+            if self.p_running.current_task == len(self.p_running.command_quene):
+                terminate()
+            # 进程进入就绪队列继续等待执行
             else:
                 self.p_running.status = 'ready'
                 level = self.p_running.priority
