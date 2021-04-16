@@ -42,7 +42,7 @@ class ProcessManager(object):
             pcblist: 被管理进程的PCB
             ready_quene: 就绪队列，分为三个优先级
             waiting_quene:等待队列
-            p_running：正在运行的进程，同一时间只有一个
+            p_running：正在运行的进程，引用pcb，同一时间只有一个
             memory_manager: 每个进程所对应的内存及其管理器
             mem_of_pid：每个进程所对应的内存号
         """
@@ -74,22 +74,22 @@ class ProcessManager(object):
 
     def fork(self):
         """ 创建子进程 """
-        child_msize = self.pcblist[self.p_running].msize
+        child_msize = self.p_running.msize
         mem_no = self.memory_manager.alloc(self.pid_no, child_msize) 
         if mem_no == -1:
             self.error_handler('mem')
         else:
             # 初始化子进程pcb
-            child_pcb = copy.deepcopy(self.pcblist[self.p_running]) 
+            child_pcb = copy.deepcopy(self.p_running) 
             child_pcb.pid = self.pid_no
-            child_pcb.parent_id = self.p_running
+            child_pcb.parent_id = self.p_running.pid
             child_pcb.create_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
 
             self.pcblist.append(child_pcb)
             self.ready_quene[child_pcb.priority].append(child_pcb.pid)
             self.pid_no += 1
-            self.pcblist[self.p_running].child_pid_list.
-            print(f'[pid {self.pid_no}] process forked successfully by [pid {self.p_running}]' )
+            self.p_running.child_pid_list
+            print(f'[pid {self.pid_no}] process forked successfully by [pid {self.p_running.pid}]' )
 
 
 
@@ -101,21 +101,21 @@ class ProcessManager(object):
         """ 调度进程，ready->running """
         for level in range(0, len(self.ready_quene)):
             if self.ready_quene[level]:
-                self.p_running = self.ready_quene[level][0]
+                self.p_running = self.pcblist(self.ready_quene[level][0])
                 self.ready_quene[level].pop(0)
-                self.pcblist[self.p_running].status = 'running'
-        self.p_running = -1  # ready队列为空，无进程可运行
+                self.p_running.status = 'running'
+        self.p_running = None  # ready队列为空，无进程正在运行
 
     def timeout(self):
         """ 时间片用尽，running->ready/terminate """
-        if self.p_running != -1:
+        if self.p_running:
             # 如何表示任务是否已完成
-            if len(self.pcblist[self.p_running].command_quene) != :
-                """ TODO 任务已完成，正常结束进程 """
+            if len(self.p_running.command_quene) != self.p_running.current_task:
+                """ TODO 该条批处理指令已完成 """
             else:
-                self.pcblist[self.p_running].status = 'ready'
-                level = self.pcblist[self.p_running].priority
-                self.ready_quene[level].append(self.p_running)
+                self.p_running.status = 'ready'
+                level = self.p_running.priority
+                self.ready_quene[level].append(self.p_running.pid)
         self.dispatch()
 
     def io_wait(self, pid):

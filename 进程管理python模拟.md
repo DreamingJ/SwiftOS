@@ -68,7 +68,7 @@ class ProcessManager(object):
 
 两种方式：执行命令创建、由父进程fork
 
-**create()**函数：exec文件创建 
+ **create()**函数：exec文件创建 
 
  **fork()** 函数：创建子进程
 
@@ -141,9 +141,6 @@ class ProcessManager(object):
 
 - 
 
-![image-20210412171353945](C:\Users\柯西\AppData\Roaming\Typora\typora-user-images\image-20210412171353945.png)
-
-
 
 ### 2.5 结束进程
 
@@ -164,7 +161,7 @@ class ProcessManager(object):
 
 ## 三、运行逻辑
 
-#### **3.1两个线程**
+#### **3.1 两个线程**
 
 一个负责从命令行接收消息，展示进程状态
 
@@ -172,7 +169,7 @@ class ProcessManager(object):
 
 
 
-#### **3.2 逻辑主函数** start_manager()
+#### 3.2 逻辑主函数 start_manager()
 
 
 
