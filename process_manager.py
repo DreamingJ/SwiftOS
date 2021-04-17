@@ -72,6 +72,7 @@ class ProcessManager(object):
             if mem_no == -1:
                 self.error_handler('mem')
             else:
+                """ TODO 是否有breakbug，对比下 """
                 pcb = PCB(self.pid_no, exefile['name'], exefile['priority'], exefile['content'], int(exefile['size']))
                 self.pcblist.append(pcb)
                 self.ready_quene[exefile['priority']].append(pcb.pid)
@@ -107,11 +108,12 @@ class ProcessManager(object):
     def dispatch(self):
         """ 调度进程，ready->running """
         for level in range(0, len(self.ready_quene)):
+            # 就绪队列不为空
             if self.ready_quene[level]:
                 self.p_running = self.pcblist(self.ready_quene[level][0])
                 self.ready_quene[level].pop(0)
                 self.p_running.status = 'running'
-        self.p_running = None  # ready队列为空，无进程正在运行
+                break
 
     def timeout(self):
         """ 时间片用尽，running->ready/terminate """
@@ -126,7 +128,7 @@ class ProcessManager(object):
                 self.ready_quene[level].append(self.p_running.pid)
         self.dispatch()
 
-    def io_wait(self, pid):
+    def io_wait(self):
         """ 等待io事件，running->waiting """
         pass
     
@@ -139,6 +141,9 @@ class ProcessManager(object):
 
     def start_manager(self):
         """ 主逻辑，启动模块并运行 """
+        while True:
+            self.dispatch()
+
 
     def error_handler(self, type):
         if type == 'mem':

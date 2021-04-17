@@ -179,6 +179,11 @@ class ProcessManager(object):
 
 - 从就绪队列调度
 - 运行，持续时间为一个时间片or结束
+  - [fork
+  - [cpu, 5]  读取时间，判断时间片决定是否timeout
+    - 批处理指令结束，转terminate
+    - 还存在批处理指令，继续进就绪队列等待
+  - [io, 10] 转到wait队列等待完成，
 - 继续调度
 
 #### 参考方式

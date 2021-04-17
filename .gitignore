@@ -2,5 +2,6 @@
 *~
 __pycache__
 .DS_Store
+test.py
 processRefer.py
 memory_manager.py
