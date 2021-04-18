@@ -114,21 +114,14 @@ class ProcessManager(object):
                 break
 
     def timeout(self):
-        """ 时间片用尽，running->ready/terminate """
+        """ 时间片用尽，running->ready """
+        time.sleep(self.time_slot)
         if self.p_running:
-            # 当前是否执行到进程的最后一条任务
-            if self.is_last_task(self.p_running.pid):
-                if(self.memory_manager.free(self.p_running.pid)):
-                    self.p_running.status = 'terminated'
-                    print(f'[Pid #{self.p_running.pid}] finished tasks, turn to terminated.')
-                else:
-                    print("Failed to free the memory of [Pid #%d]." % self.p_running.pid)
-            # 不是最后一条，进程进入就绪队列继续等待执行
-            else:
-                self.p_running.status = 'ready'
-                level = self.p_running.priority
-                self.ready_quene[level].append(self.p_running.pid)
-        self.dispatch()
+            # 进程进入就绪队列继续等待执行
+            self.p_running.status = 'ready'
+            level = self.p_running.priority
+            self.ready_quene[level].append(self.p_running.pid)
+        # self.dispatch()
 
     def io_wait(self):
         """ 等待io事件，running->waiting """
@@ -141,37 +134,57 @@ class ProcessManager(object):
     def kill_process(self, pid):
         pass
 
-    def is_last_task(self, pid):
-        return self.pcblist[pid].current_task == len(self.pcblist[pid].tasklist)
+    def keep_next_task(self, pid):
+        # 若当前是进程的最后一条task，结束进程
+        if self.pcblist[pid].current_task == len(self.pcblist[pid].tasklist)-1 :
+            if(self.memory_manager.free(self.p_running.pid)):
+                self.p_running.status = 'terminated'
+                print(f'[Pid #{self.p_running.pid}] finished tasks, turn to terminated.')
+            else:
+                print("Failed to free the memory of [Pid #%d]." % self.p_running.pid)
+            return False
+        else:   # 继续下一个task
+            self.p_running.current_task += 1
+            return True
 
     def start_manager(self):
         """ 主逻辑，启动模块并运行 """
         while True:
             self.dispatch()
             if self.p_running:
-                # 在一个时间片内：
                 task = self.p_running.tasklist[self.p_running.current_task]
-                if task[0] == 'cpu':
+                if task[0] == 'fork':
+                    self.fork()
+                    # 计时，进ready
+                    self.timeout()
+                    # 继续下一task，若当前进程task全部完成，则重新调度
+                    self.keep_next_task(self.p_running.pid)
+                    continue
+                elif task[0] == 'access':
+                    self.memory_manager.access(self.p_running.pid, task[1])
+                    self.timeout()
+                    self.keep_next_task(self.p_running.pid)
+                    continue
+                
+                elif task[0] == 'print':
+                    self.io_wait()
+                elif task[0] == 'cpu':
                     if task[1] > self.time_slot:
-                        time.sleep(self.time_slot)
                         self.timeout()
+                        task[1] -= self.time_slot
+                        continue
                     else:
                         time.sleep(task[1])
-                        # 剩余时间继续下一条指令
-
-                # task[0]的值变了没，还能用吗？
-                elif task[0] == 'fork':
-                    pass
-                elif task[0] == 'io':
-                    pass
-
-
-
+                        self.keep_next_task(self.p_running.pid)
+                        self.p_running.status = 'ready'
+                        level = self.p_running.priority
+                        self.ready_quene[level].append(self.p_running.pid)
+                        continue                    
 
     def error_handler(self, type):
         if type == 'mem':
             print("Failed to create new process: No enough memory.")
-        elif type== 'exec':
+        elif type == 'exec':
             print('Failed to exucute: Not an executable file.')
         elif type == 'kill':
             print('Failed to kill process: No such process.')
