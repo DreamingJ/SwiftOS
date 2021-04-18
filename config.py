@@ -11,7 +11,7 @@ priority = True
 preemptive = True
 time_slot_conf = 0.5
 cpu_num = 1
-printer_num = 1
+printer_num_conf = 1
 
 # config about storage
 storage_block_size = 512

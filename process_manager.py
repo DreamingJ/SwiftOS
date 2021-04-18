@@ -6,7 +6,7 @@ import time
 import copy
 import threading
 from config import *
-from process_manager import MemoryManager
+from memory_manager import MemoryManager
 
 
 class PCB(object):
@@ -45,20 +45,21 @@ class ProcessManager(object):
         Args:
             pid_no: 下个进程的序号
             pcblist: 被管理进程的PCB
-            ready_quene: 就绪队列，分为三个优先级
-            waiting_quene:等待队列
+            ready_queue: 就绪队列，分为三个优先级
+            waiting_queue:等待队列
             p_running：正在运行的进程，引用pcb，同一时间只有一个
             memory_manager: 每个进程所对应的内存及其管理器
             mem_of_pid：每个进程所对应的内存号
         """
         self.pid_no = 0
         self.pcblist = []
-        self.ready_quene = [[] for i in range(3)]
-        self.waiting_quene = []
+        self.ready_queue = [[] for i in range(3)]
+        self.waiting_queue = []
         self.p_running = None
         self.memory_manager=memory_manager
         self.time_slot=time_slot_conf
         self.priority=priority
+        self.printer_num = printer_num_conf
         self.mem_of_pid = {}
 
     def create(self, exefile):
@@ -72,7 +73,7 @@ class ProcessManager(object):
             else:
                 pcb = PCB(self.pid_no, exefile['name'], exefile['priority'], exefile['content'], int(exefile['size']))
                 self.pcblist.append(pcb)
-                self.ready_quene[exefile['priority']].append(pcb.pid)
+                self.ready_queue[exefile['priority']].append(pcb.pid)
                 self.mem_of_pid[pcb.pid] = mem_no
                 self.pid_no += 1
                 print(f'[pid {pcb.pid}] process created successfully.')
@@ -91,25 +92,19 @@ class ProcessManager(object):
             child_pcb.create_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
 
             self.pcblist.append(child_pcb)
-            self.ready_quene[child_pcb.priority].append(child_pcb.pid)
+            self.ready_queue[child_pcb.priority].append(child_pcb.pid)
             self.pid_no += 1
             self.p_running.child_pid_list.append(child_pcb)
             print(f'[pid {self.pid_no}] process forked successfully by [pid {self.p_running.pid}]' )
 
-
-
-    def get_status(self, pid):
-        """ 获取进程当前状态 """
-        return self.pcblist[pid].status
-
     def dispatch(self):
         """ 调度进程，ready->running """
         self.p_running = None
-        for level in range(0, len(self.ready_quene)):
+        for level in range(0, len(self.ready_queue)):
             # 就绪队列不为空
-            if self.ready_quene[level]:
-                self.p_running = self.pcblist(self.ready_quene[level][0])
-                self.ready_quene[level].pop(0)
+            if self.ready_queue[level]:
+                self.p_running = self.pcblist(self.ready_queue[level][0])
+                self.ready_queue[level].pop(0)
                 self.p_running.status = 'running'
                 break
 
@@ -120,22 +115,47 @@ class ProcessManager(object):
             # 进程进入就绪队列继续等待执行
             self.p_running.status = 'ready'
             level = self.p_running.priority
-            self.ready_quene[level].append(self.p_running.pid)
-        # self.dispatch()
+            self.ready_queue[level].append(self.p_running.pid)
 
     def io_wait(self):
-        """ 等待io事件，running->waiting """
-        pass
-    
-    def io_completion(self, pid):
-        """ io完成，wating->ready """
-        pass
+        """ 等待io事件，进程阻塞，running->waiting """
+        self.p_running.status = 'waiting'
+        io_time = self.p_running.current_task[1]
+        # waiting queue： [[pid1, time], [pid2, time]]
+        self.waiting_queue.append([self.p_running.pid, io_time])
 
-    def kill_process(self, pid):
-        pass
+    def io_completion(self, pid):
+        """ io完成，进程被唤醒，waiting->ready """
+        self.printer_num += 1
+        if self.keep_next_task(pid) == True:
+            self.pcblist[pid].status = 'ready'
+            level = self.pcblist[pid].priority
+            self.ready_queue[level].append(pid)
+
+    def kill(self, pid):
+        """ kill进程，释放所属资源. 考虑和run守护进程的互斥 """
+        if pid not in [pcb.pid for pcb in self.pcblist]:
+            self.error_handler('kill_nopid', pid)
+        else:
+            status = self.pcb_list[pid].status
+            if status == 'terminated':
+                self.error_handler('kill_already', pid)
+            else:
+                if status == 'ready':
+                    level = self.pcb_list[pid].priority
+                    self.ready_queue[level].remove(pid)
+                elif status == 'running':
+                    self.p_running = None
+                elif status == 'waiting':
+                    self.waiting_queue.remove(pid)
+                elif status == 'waiting(Printer)':
+                    self.io_completion(pid)
+                # 释放内存资源
+                self.memory_manager.free(pid)
+                self.pcb_list[pid].status = 'terminated'
 
     def keep_next_task(self, pid):
-        # 若当前是进程的最后一条task，结束进程
+        # 若当前是进程的最后一条task，转为结束态
         if self.pcblist[pid].current_task == len(self.pcblist[pid].tasklist)-1 :
             if(self.memory_manager.free(self.p_running.pid)):
                 self.p_running.status = 'terminated'
@@ -146,6 +166,54 @@ class ProcessManager(object):
         else:   # 继续下一个task
             self.p_running.current_task += 1
             return True
+
+    def print_process_status(self):
+        """ 获取当前进程状态 """
+        running = False
+        for pro in self.pcblist:
+            if pro.status != 'terminated':
+                print("[pid #%5d] name: %-10s status: %-20s create_time: %s" % (pro.pid, pro.name, pro.status, pro.create_time))
+                running = True
+        if not running:
+            print("No process is running currently")
+
+    def print_resource_status(self):
+        """ 获取设备资源状态 """
+        if self.printer_num == printer_num_conf:
+            print(f'No Printer is using,there are {self.printer_num} Printer is free')
+        else:
+            print(f'{self.printer_num} Printer is using')
+
+    def input_handler(self):
+        """ 处理命令行输入 """
+        while True:
+            s = input("\$").split()
+            if s[0] == 'ps':
+                self.print_process_status()
+            elif s[0] == 'rs':
+                self.print_resource_status()
+            elif s[0] == 'kill':
+                self.kill(int(s[1]))
+            elif s[0] == 'exec':
+                # 需配合文件管理模块
+                exefile = self.file_manager.get_file(file_path=s[1], seek_algo=seek_algo)
+                self.create(exefile)
+            else:
+                print('command not found: %s' % s[0])
+
+    def io_device_handler(self):
+        """ 守护线程，模拟IO设备运行 """
+        while True:
+            # 从waiting队列调度任务进行io
+            if self.waiting_queue:
+                pid = self.waiting_queue[0][0]
+                wait_time = self.waiting_queue[0][0]
+                self.waiting_queue.remove(pid)
+                self.pcblist[pid].status = "waiting(Printer)"
+                self.printer_num -= 1
+                time.sleep(wait_time)
+                # io完成
+                self.io_completion(pid)
 
     def start_manager(self):
         """ 主逻辑，启动模块并运行 """
@@ -164,10 +232,10 @@ class ProcessManager(object):
                     self.memory_manager.access(self.p_running.pid, task[1])
                     self.timeout()
                     self.keep_next_task(self.p_running.pid)
-                    continue
-                
+                    continue        
                 elif task[0] == 'print':
                     self.io_wait()
+                    continue
                 elif task[0] == 'cpu':
                     if task[1] > self.time_slot:
                         self.timeout()
@@ -175,19 +243,23 @@ class ProcessManager(object):
                         continue
                     else:
                         time.sleep(task[1])
-                        self.keep_next_task(self.p_running.pid)
-                        self.p_running.status = 'ready'
-                        level = self.p_running.priority
-                        self.ready_quene[level].append(self.p_running.pid)
-                        continue                    
+                        if self.keep_next_task(self.p_running.pid) == True:
+                            self.p_running.status = 'ready'
+                            level = self.p_running.priority
+                            self.ready_queue[level].append(self.p_running.pid)
+                            continue        
+            
 
-    def error_handler(self, type):
+
+    def error_handler(self, type, pid=-1):
         if type == 'mem':
             print("Failed to create new process: No enough memory.")
         elif type == 'exec':
             print('Failed to exucute: Not an executable file.')
-        elif type == 'kill':
-            print('Failed to kill process: No such process.')
+        elif type == 'kill_nopid':
+            print(f'kill: kill [pid #{pid}] failed: no such process')
+        elif type == 'kill_already':
+            print(f'kill: kill [pid #{pid}] failed: the process is already terminiated')
 
 
 if __name__ == '__main__':
@@ -195,3 +267,13 @@ if __name__ == '__main__':
                                                 page_number=memory_page_number,
                                                 physical_page=memory_physical_page_number)
     pm = ProcessManager(memory)
+    # 三个线程负责输入、后台逻辑、io设备运行
+    input_thread = threading.Thread(target=pm.input_handler)
+    logical_thread = threading.Thread(target=pm.start_manager)
+    IOdevice_thread = threading.Thread(target=pm.io_device_handler)
+
+    input_thread.start()
+    logical_thread.setDaemon(True)
+    IOdevice_thread.setDaemon(True)
+    logical_thread.start()
+    IOdevice_thread.start()
