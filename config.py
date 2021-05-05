@@ -9,7 +9,7 @@ memory_physical_page_number = 8
 # config about process scheduling
 priority = True
 preemptive = True
-time_slot_conf = 0.5
+time_slot_conf = 1
 cpu_num = 1
 printer_num_conf = 1
 
