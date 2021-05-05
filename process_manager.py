@@ -100,7 +100,7 @@ class ProcessManager(object):
             self.pid_no += 1
             self.p_running.child_pid_list.append(child_pcb)
             sys.stdout.write('\033[2K\033[1G\033[3D')  # to remove extra output \$
-            print(f'[pid {child_pcb.pid}] process forked successfully by [pid {child_pcb.parent_id}]')
+            print(f'[pid {child_pcb.pid}] process forked successfully by [pid {child_pcb.parent_id}].')
 
     def dispatch(self):
         """ 调度进程，ready->running """
@@ -128,17 +128,17 @@ class ProcessManager(object):
         io_time = self.p_running.tasklist[self.p_running.current_task][1]
         # waiting queue： [[pid1, time], [pid2, time]]
         self.waiting_queue.append([self.p_running.pid, io_time])
-        # 加入就绪队列
-        self.ready_queue[self.p_running.priority].append(self.p_running.pid)
+
 
     def io_completion(self, pid):
         """ io完成，进程被唤醒，waiting->ready """
         self.printer_num += 1
-        print(f'[pid {self.p_running.pid}] process I/O successfully.')
+        print(f'[pid {pid}] process I/O successfully.')
         if self.keep_next_task(pid) == True:
             self.pcblist[pid].status = 'ready'
             level = self.pcblist[pid].priority
             self.ready_queue[level].append(pid)
+
 
     def kill(self, pid):
         """ kill进程，释放所属资源. 考虑和run守护进程的互斥 """
@@ -158,21 +158,25 @@ class ProcessManager(object):
                     self.waiting_queue.remove(pid)
                 elif status == 'waiting(Printer)':
                     self.io_completion(pid)
+                self.pcblist[pid].status = 'terminated'
                 # 释放内存资源
                 self.memory_manager.free(pid)
-                self.pcblist[pid].status = 'terminated'
+                
 
     def keep_next_task(self, pid):
         # 若当前是进程的最后一条task，转为结束态
         if self.pcblist[pid].current_task == len(self.pcblist[pid].tasklist)-1 :
-            if(self.memory_manager.free(self.p_running.pid)):
-                self.p_running.status = 'terminated'
-                print(f'[Pid #{self.p_running.pid}] finished tasks, turn to terminated.')
+            if(self.memory_manager.free(pid)):
+                # 从就绪队列取出
+                self.ready_queue[self.pcblist[pid].priority].remove(pid)
+                self.pcblist[pid].status = 'terminated'
+                print(f'[Pid #{pid}] finished.')
             else:
-                print("Failed to free the memory of [Pid #%d]." % self.p_running.pid)
+                # 该进程对应的内存空间已被释放
+                print("Failed to free, the memory of [Pid %d] has been freed." % pid)
             return False
         else:   # 继续下一个task
-            self.p_running.current_task += 1
+            self.pcblist[pid].current_task += 1
             return True
 
     def print_process_status(self):
@@ -218,7 +222,7 @@ class ProcessManager(object):
                 pid = self.waiting_queue[0][0]
                 wait_time = self.waiting_queue[0][0]
                 # TODO waitingqueue太长，remove元素
-                self.waiting_queue.remove(pid)
+                self.waiting_queue.pop(0)
                 self.pcblist[pid].status = "waiting(Printer)"
                 self.printer_num -= 1
                 time.sleep(wait_time)
@@ -257,7 +261,7 @@ class ProcessManager(object):
                         continue
                     else:
                         time.sleep(task[1])
-                        print(f'[pid {self.p_running.pid}] process cpu task completed, last {task[1]}.')
+                        print(f'[pid {self.p_running.pid}] process activaly released cpu.')
                         if self.keep_next_task(self.p_running.pid) == True:
                             self.p_running.status = 'ready'
                             level = self.p_running.priority
