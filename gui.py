@@ -1,5 +1,5 @@
 import datetime
-
+import subprocess
 import logging
 import os
 import signal
@@ -15,36 +15,26 @@ class Window(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent, Qt.WindowMinMaxButtonsHint|Qt.WindowCloseButtonHint)
 
-        self.setWindowTitle('LocalGUI')
+        self.setWindowTitle('LocalGUI')      
 
-      
-
-        self.usernameLine = QLineEdit('u1')
-        self.passwordLine = QLineEdit('11')
+        self.usernameLine = QLineEdit('buptosuser')
+        self.passwordLine = QLineEdit('123456')
         self.passwordLine.setEchoMode(QLineEdit.Password)
 
 
         self.startBtn = QPushButton('Start')
         self.startBtn.clicked.connect(self.startClicked)
 
-        selfProcessIdLine = QLabel(str(os.getpid()))
-        
-        self.processIdLine = QLabel()
-
         self.sendBandwidthLine = QLabel()
         self.recvBandwidthLine = QLabel()
 
-        formLayout = QFormLayout()
-     
+        formLayout = QFormLayout()     
         formLayout.addRow(QLabel('Username:'), self.usernameLine)
         formLayout.addRow(QLabel('Password:'), self.passwordLine)
         formLayout.addRow(QLabel(''), self.startBtn)
-        formLayout.addRow(QLabel('Self Process ID:'), selfProcessIdLine)
-        formLayout.addRow(QLabel('Proxy Process ID:'), self.processIdLine)
       
-
         self.setLayout(formLayout)
-        self.resize(300, 600)
+        self.resize(300, 300)
 
         self.process = QProcess()
         self.process.setProcessChannelMode(QProcess.MergedChannels)
@@ -97,9 +87,16 @@ class Window(QDialog):
             password = self.passwordLine.text()
          
             pythonExec = os.path.basename(sys.executable)
-            cmdLine = f'{pythonExec} kernel.py local  -u {username} -w {password} '
-            log.debug(f'cmd={cmdLine}')
-            self.process.start(cmdLine)
+
+            cmd = 'python kernel.py'
+            cmd1 = 'e:/Programs/path/OSenv/Scripts/python.exe E:/Programs/swiftos/SwiftOS/kernel.py'
+            #p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            os.system("python kernel.py %s" % (username) )
+
+            #subprocess.call('start /wait python kernel.py', shell=True)
+            #cmdLine = f'{pythonExec} kernel.py local  -u {username} -w {password} '
+            #log.debug(f'cmd={cmdLine}')
+            #self.process.start(cmdLine)
         else:
             self.process.kill()
 

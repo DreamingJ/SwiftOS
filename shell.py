@@ -19,9 +19,13 @@ class Shell:
         print('\033[35m'+'*WELCOME TO SwiftOS 1.0*', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
     # current working directory
-    def get_split_command(self, cwd, file_list):
+    def get_split_command(self, cwd, file_list, userStatus):
         try:
-            commands = input('\033[32m' + cwd + '$ ').split(';')
+            if userStatus == 0:
+                sign = '$ '
+            else:
+                sign = '# '
+            commands = input('\033[32m' + cwd + sign).split(';')
         except BaseException:
             commands = []
         for i in range(len(commands)):

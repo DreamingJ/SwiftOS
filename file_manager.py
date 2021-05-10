@@ -285,15 +285,21 @@ class Block:
 #       对于非法操作进行拦截并发出异常警告
 ##############################################
 class FileManager:
-    # os.sep是为了解决不同平台上文件路径分隔符差异问题
-    file_separator = os.sep
-    # os.getcwd() 方法用于返回当前工作目录
-    root_path = os.getcwd() + file_separator + 'SwiftOS_files'  # Win下为\, linux下需要修改!
-
+    
     #def __init__(self, block_size=512, tracks=200, secs=12):  # block_size的单位:Byte
-    def __init__(self, block_size, tracks, secs, seek_algo):
+    def __init__(self, block_size, tracks, secs, seek_algo, username):
+
+        # os.sep是为了解决不同平台上文件路径分隔符差异问题
+        self.file_separator = os.sep
+        # os.getcwd() 方法用于返回当前工作目录
+        self.root_path = os.getcwd() + self.file_separator + 'SwiftOS_files' + self.file_separator + username  # Win下为\, linux下需要修改!
+        print("*****"+self.root_path)
+
         # 当前工作目录相对路径, 可以与root_path一起构成绝对路径
+        #self.current_working_path = self.file_separator + '@' + username + self.file_separator
         self.current_working_path = self.file_separator
+
+        print("*****"+self.current_working_path)
 
         self.block_size = block_size
         self.block_number = tracks * secs
@@ -472,6 +478,7 @@ class FileManager:
 
     # 将 "目录的相对或绝对路径" 转化为 当前目录的字典, 用于之后的判断 文件存在 / 文件类型 几乎所有函数的第一句都是它
     def pathToDictionary(self, dir_path):
+        print(dir_path)
         if dir_path == '' or dir_path[0] != self.file_separator:
             dir_path = self.current_working_path + dir_path
 
@@ -776,7 +783,8 @@ class FileManager:
                 print("rm: invalid option'" + mode + "', try '-r' / '-f' / '-rf'")
 
     # 将存储的文件树打印出来
-    def showFileTree(self, dir=root_path, layer=0):
+    def showFileTree(self, layer=0):
+        dir = self.root_path
         listdir = os.listdir(dir) 
         #os.listdir() 方法用于返回指定的文件夹包含的文件或文件夹的名字的列表 它不包括 . 和 .. 即使它在文件夹中
 
@@ -789,7 +797,7 @@ class FileManager:
 
             # 逐层递归
             if os.path.isdir(file_path):
-                self.showFileTree(file_path, layer + 1)
+                self.showFileTree( layer + 1)
 
     # 打印所有block的状态
     def showBlockStatus(self):
@@ -822,7 +830,7 @@ class FileManager:
 
 if __name__ == '__main__':
     # 创建一个文件管理的实例化对象
-    demo = FileManager()
+    demo = FileManager(block_size=512, tracks=200, secs=12, seek_algo='FIFO', username='USER')
     # 初始化该对象的初始指针头以及寻道算法
     demo.setNow_headpointer(35) #设置初始指针位置
     demo.getSeekAlgo(seek_algo='FCFS')

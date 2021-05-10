@@ -9,15 +9,19 @@ from memory_manager import MemoryManager
 from process_manager import ProcessManager
 from config import *
 import os
+import sys
 import threading
 import logging
+import datetime
 #from . import config
 
 class Kernel:
-    def __init__(self):
+    def __init__(self,):
+        self.userStatus = 0
 
         self.my_shell = Shell()
-        self.my_filemanager = FileManager(storage_block_size, storage_track_num, storage_sec_num,seek_algo)
+        self.username = sys.argv[1]
+        self.my_filemanager = FileManager(storage_block_size, storage_track_num, storage_sec_num,seek_algo, self.username)
         self.my_memorymanager = MemoryManager(storage_mode, option, page_size, page_total,
                  frame_size, frame_total)
         self.my_processmanager = ProcessManager(self.my_memorymanager,time_slot_conf,priority_conf,printer_num_conf)
@@ -67,14 +71,13 @@ class Kernel:
 
 
     def run(self):
-        userStatus = 0
-        
+                
         #print("*****",const.option)
         
         while True:
             # a list of commands split by space or tab
             current_file = self.my_filemanager.pathToDictionary('').keys()       
-            command_list = self.my_shell.get_split_command(cwd=self.my_filemanager.current_working_path,file_list=current_file)
+            command_list = self.my_shell.get_split_command(cwd=self.my_filemanager.current_working_path, file_list=current_file, userStatus=self.userStatus)
 
             if len(command_list) == 0:
                 continue
