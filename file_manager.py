@@ -288,9 +288,10 @@ class FileManager:
     # os.sep是为了解决不同平台上文件路径分隔符差异问题
     file_separator = os.sep
     # os.getcwd() 方法用于返回当前工作目录
-    root_path = os.getcwd() + file_separator + 'MiniOS_files'  # Win下为\, linux下需要修改!
+    root_path = os.getcwd() + file_separator + 'SwiftOS_files'  # Win下为\, linux下需要修改!
 
-    def __init__(self, block_size=512, tracks=200, secs=12):  # block_size的单位:Byte
+    #def __init__(self, block_size=512, tracks=200, secs=12):  # block_size的单位:Byte
+    def __init__(self, block_size, tracks, secs, seek_algo):
         # 当前工作目录相对路径, 可以与root_path一起构成绝对路径
         self.current_working_path = self.file_separator
 
@@ -298,6 +299,7 @@ class FileManager:
         self.block_number = tracks * secs
         self.tracks = tracks
         self.secs = secs
+        self.seek_algo = seek_algo
 
         # self.unfillable_block = [3, 6, 9, 17]
         self.unfillable_block = [2,3,4,5,6,9,10,11,12,13,16,17]
@@ -315,27 +317,27 @@ class FileManager:
     # file_path支持绝对路径, mode格式与函数open()约定的相同
 
     # 获取磁盘寻道的算法
-    def getSeekAlgo(self, seek_algo='FCFS'):
+    def getSeekAlgo(self):
         #seek_queue = [(98, 3), (183, 5), (37, 2), (122, 11), (119, 5), (14, 0), (124, 8), (65, 5), (67, 1), (198, 5), (105, 5), (53, 3)]
         seek_queue = [(116, 3), (5, 5), (12, 2), (97, 9), (56, 6)]
   
-        if seek_algo == 'FCFS':
+        if self.seek_algo == 'FCFS':
             self.disk.FCFS(seek_queue)
-        elif seek_algo == 'SSTF':
+        elif self.seek_algo == 'SSTF':
             self.disk.SSTF(seek_queue)
-        elif seek_algo == 'SCAN':
+        elif self.seek_algo == 'SCAN':
             self.disk.SCAN(seek_queue)
-        elif seek_algo == 'C_SCAN':
+        elif self.seek_algo == 'C_SCAN':
             self.disk.C_SCAN(seek_queue)
-        elif seek_algo == 'LOOK':
+        elif self.seek_algo == 'LOOK':
             self.disk.LOOK(seek_queue)
-        elif seek_algo == 'C_LOOK':
+        elif self.seek_algo == 'C_LOOK':
             self.disk.C_LOOK(seek_queue)
         else:
             print("getSeekAlgo: error. '" + seek_algo + "' no such disk seek algorithm")
 
     # catch e 捕捉打开文件操作中的异常
-    def getFileCatchE(self, file_path, mode='r', seek_algo='FCFS'):
+    def getFileCatchE(self, file_path, mode='r'):
         # 由于open()能完成绝大多数工作, 该函数的主要功能体现在排除异常:
         (upper_path, basename) = self.pathSplit(file_path)
         current_working_dict = self.pathToDictionary(upper_path)
@@ -356,17 +358,17 @@ class FileManager:
 
                     seek_queue = self.fpToLoc(file_path)
                     print(seek_queue)
-                    if seek_algo == 'FCFS':
+                    if self.seek_algo == 'FCFS':
                         self.disk.FCFS(seek_queue)
-                    elif seek_algo == 'SSTF':
+                    elif self.seek_algo == 'SSTF':
                         self.disk.SSTF(seek_queue)
-                    elif seek_algo == 'SCAN':
+                    elif self.seek_algo == 'SCAN':
                         self.disk.SCAN(seek_queue)
-                    elif seek_algo == 'C_SCAN':
+                    elif self.seek_algo == 'C_SCAN':
                         self.disk.C_SCAN(seek_queue)
-                    elif seek_algo == 'LOOK':
+                    elif self.seek_algo == 'LOOK':
                         self.disk.LOOK(seek_queue)
-                    elif seek_algo == 'C_LOOK':
+                    elif self.seek_algo == 'C_LOOK':
                         self.disk.C_LOOK(seek_queue)
                     else:
                         print("get_file: cannot get file '" + basename + "': '" + seek_algo + "' no such disk seek algorithm")
@@ -525,9 +527,9 @@ class FileManager:
             if current_working_dict[3] == 'x':
                 if mode == '-l' or mode == '-al': # '-l' 要求输出current_working_dict
                     # 特殊颜色
-                    print(current_working_dict, '\t', '\033[1;32m' + basename + '\033[0m')
+                    print(current_working_dict, '\t', '\033[1;33;47m' + basename + '\033[0m')
                 else:
-                    print('\033[1;32m' + basename + '\033[0m', '    ', end='')
+                    print('\033[1;33;47m' + basename + '\033[0m', '    ', end='')
             else:
                 if mode == '-l' or mode == '-al':
                     print(current_working_dict, '\t', basename)
@@ -550,15 +552,15 @@ class FileManager:
                 # 文件夹高亮蓝色显示
                 elif isinstance(current_working_dict[file], dict):
                     if mode == '-l' or mode == '-al':
-                        print('d---', '\t', '\033[1;34m' + file + '\033[0m')
+                        print('d---', '\t', '\033[1;34;47m' + file + '\033[0m')
                     else:
-                        print('\033[1;34m' + file + '\033[0m', '    ', end='')
-                # 可执行文件高亮绿色显示
+                        print('\033[1;34;47m' + file + '\033[0m', '    ', end='')
+                # 可执行文件高亮红色显示
                 elif current_working_dict[file][0] == 'e':
                     if mode == '-l' or mode == '-al':
-                        print(current_working_dict[file], '\t', '\033[1;32m' + file + '\033[0m')
+                        print(current_working_dict[file], '\t', '\033[31;47m' + file + '\033[0m')
                     else:
-                        print('\033[1;32m' + file + '\033[0m', '    ', end='')
+                        print('\033[31;47m' + file + '\033[0m', '    ', end='')
                 else:
                     if mode == '-l' or mode == '-al':
                         print(current_working_dict[file], '\t', file)

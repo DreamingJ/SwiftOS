@@ -10,20 +10,18 @@ from time import sleep
 class Shell:
     def __init__(self):
         self.block_flag = False
-        self.clear_cmd_str = 'cls' if platform.system() == 'Windows' else 'clear'
-        
-        print ("****"+clear_cmd_str )
+        self.clear_cmd_str = 'cls' if platform.system() == 'Windows' else 'clear'      
         
         self.print_system_info()
 
     def print_system_info(self):
         os.system(self.clear_cmd_str)
-        print('SwiftOS 1.0', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        print('\033[35m'+'*WELCOME TO SwiftOS 1.0*', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
     # current working directory
     def get_split_command(self, cwd, file_list):
         try:
-            commands = input(cwd + '$ ').split(';')
+            commands = input('\033[32m' + cwd + '$ ').split(';')
         except BaseException:
             commands = []
         for i in range(len(commands)):

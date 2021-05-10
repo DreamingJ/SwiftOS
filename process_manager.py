@@ -5,7 +5,7 @@ import sys
 import time
 import copy
 import threading
-from config import Config
+#import config
 from memory_manager import MemoryManager
 
 
@@ -40,7 +40,7 @@ class PCB(object):
 
 class ProcessManager(object):
     """ Provide functions to manage process"""
-    def __init__(self, memory_manager,time_slot_conf,priority,printer_num_conf):
+    def __init__(self, memory_manager,time_slot_conf,priority_conf,printer_num_conf):
         """ 
         Args:
             pid_no: 下个进程的序号
@@ -58,9 +58,9 @@ class ProcessManager(object):
         self.p_running = None
         self.is_running = False
         self.memory_manager=memory_manager
-        self.time_slot=COnfig.time_slot_conf
-        self.priority=Config.priority
-        self.printer_num = Config.printer_num_conf
+        self.time_slot=time_slot_conf
+        self.priority=priority_conf
+        self.printer_num = printer_num_conf
         self.mem_of_pid = {}
 
     def create(self, exefile):
@@ -68,7 +68,7 @@ class ProcessManager(object):
         if exefile['type'][0] != 'e':
             self.error_handler('exec')
         else:
-            mem_no = self.memory_manager.alloc(self.pid_no, int(exefile['size'])) 
+            mem_no = self.memory_manager.allocate_memory(self.pid_no, int(exefile['size'])) 
             if mem_no == -1:
                 self.error_handler('mem')
             else:
@@ -82,7 +82,7 @@ class ProcessManager(object):
     def fork(self):
         """ 创建子进程 """
         child_msize = self.p_running.msize
-        mem_no = self.memory_manager.alloc(self.pid_no, child_msize) 
+        mem_no = self.memory_manager.allocate_memory(self.pid_no, child_msize) 
         if mem_no == -1:
             self.error_handler('mem')
         else:            
@@ -163,13 +163,13 @@ class ProcessManager(object):
                     self.io_completion(pid)
                 self.pcblist[pid].status = 'terminated'
                 # 释放内存资源
-                self.memory_manager.free(pid)
+                self.memory_manager.free_memory(pid)
                 
 
     def keep_next_task(self, pid):
         # 若当前是进程的最后一条task，转为结束态
         if self.pcblist[pid].current_task == len(self.pcblist[pid].tasklist)-1 :
-            if(self.memory_manager.free(pid)):
+            if(self.memory_manager.free_memory(pid)):
                 # 从就绪队列取出
                 self.ready_queue[self.pcblist[pid].priority].remove(pid)
                 self.pcblist[pid].status = 'terminated'
@@ -248,7 +248,7 @@ class ProcessManager(object):
                     self.keep_next_task(self.p_running.pid)
                     continue
                 elif task[0] == 'access':
-                    self.memory_manager.access(self.p_running.pid, task[1])
+                    self.memory_manager.access_memory(self.p_running.pid, task[1])
                     print(f'[pid {self.p_running.pid}] process accessed [memory {task[1]}] successfully.')
                     self.timeout()
                     self.keep_next_task(self.p_running.pid)

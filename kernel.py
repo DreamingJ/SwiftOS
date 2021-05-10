@@ -7,24 +7,29 @@ from shell import Shell
 from file_manager import FileManager
 from memory_manager import MemoryManager
 from process_manager import ProcessManager
-import const
+from config import *
 import os
 import threading
+import logging
+#from . import config
 
 class Kernel:
     def __init__(self):
 
         self.my_shell = Shell()
-        self.my_filemanager = FileManager(storage_block_size, storage_track_num, storage_sec_num)
-        self.my_memorymanager = MemoryManager(mode=memory_management_mode,
-                                               page_size=memory_page_size,
-                                               page_number=memory_page_number,
-                                               frame_size=memory_frame_size,
-                                               physical_page=memory_physical_page_number)
-        self.my_processmanager = ProcessManager(self.my_memorymanager,time_slot, priority)
+        self.my_filemanager = FileManager(storage_block_size, storage_track_num, storage_sec_num,seek_algo)
+        self.my_memorymanager = MemoryManager(storage_mode, option, page_size, page_total,
+                 frame_size, frame_total)
+        self.my_processmanager = ProcessManager(self.my_memorymanager,time_slot_conf,priority_conf,printer_num_conf)
 
-        self.my_processmanager_run = threading.Thread(target=self.my_processmanager.run)
-        self.my_processmanager_run.start()
+    
+        self.logical_thread_run = threading.Thread(target=self.my_processmanager.start_manager)
+        self.IOdevice_thread_run = threading.Thread(target=self.my_processmanager.io_device_handler)
+            
+        self.logical_thread_run.setDaemon(True)
+        self.IOdevice_thread_run.setDaemon(True)
+        self.logical_thread_run.start()
+        self.IOdevice_thread_run.start()
     
 
 
@@ -39,10 +44,8 @@ class Kernel:
             'mkf': 'create common file, format: mkf path type size',
             'dss': 'display storage status, format: dss',
             'dms': 'display memory status, format: dms',
-            'exec': 'execute file, format: exec path',
-            'chmod': 'change mode of file, format: chmod path new_mode',
-            'ps': 'display process status, format: ps',
-            'rs': 'display resource status, format: rs',
+            'exec': 'execute file, format: exec path',            
+            'ps': 'display process status, format: ps',           
             #'mon': 'start monitoring system resources, format: mon [-o], use -o to stop',
             'td': 'tidy and defragment your disk, format: td',
             'kill': 'kill process, format: kill [pid]',
@@ -50,18 +53,29 @@ class Kernel:
         }
         if len(cmdList) == 0:
             cmdList = command_info.keys()
-            print('请输入你想查找的命令'+cmdList)
+            print('please input which you want to inquiry',cmdList)
         for cmd in cmdList:
             if cmd in command_info.keys():
                 print(cmd,'--',command_info[cmd])
             else:
                 print('error!!'+cmd+'no such command')
 
+    def report_error(self, cmd, err_msg=''):
+        print('[error %s] %s' % (cmd, err_msg))
+        if err_msg == '':
+            self.help_command(cmdList=[cmd])
+
 
     def run(self):
         userStatus = 0
+        
+        #print("*****",const.option)
+        
         while True:
-            command_list = self.my_shell.get_command(cwd=self.my_filemanager.current_path)
+            # a list of commands split by space or tab
+            current_file = self.my_filemanager.pathToDictionary('').keys()       
+            command_list = self.my_shell.get_split_command(cwd=self.my_filemanager.current_working_path,file_list=current_file)
+
             if len(command_list) == 0:
                 continue
             for commands in command_list:
@@ -71,15 +85,22 @@ class Kernel:
                 order = commands[0] #命令头名字
                 argc = len(commands)
 
-                if tool == 'man':
-                    self.help_command(cmd_list=commands[1:])
+                if order == 'man':
+                    self.help_command(cmdList=commands[1:])
 
-                elif tool =='sudo':
-                    print('username: ')
+                elif order == 'time':
+                    print("current time:",datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+                elif order =='sudo':
+                    print('please input username: ')
                     input(name)
+                    print('password:')
+                    input(passwd)
+
+
                     #if name in 
 
-                elif tool == 'ls':
+                elif order == 'ls':
                     if argc >= 2:
                         if commands[1][0] == '-':
                             mode = commands[1]
@@ -90,98 +111,98 @@ class Kernel:
                             mode = ''
                             path_list = commands[1:]
                         for path in path_list:
-                            self.my_file_manager.ls(dir_path=path, mode=mode)
+                            self.my_filemanager.ls(dir_path=path, mode=mode)
                     else:
-                        self.my_file_manager.ls()
+                        self.my_filemanager.ls()
 
-                elif tool == 'cd':
+                elif order == 'cd':
                     if argc >= 2:
-                        self.my_file_manager.cd(dir_path=commands[1])
+                        self.my_filemanager.cd(dir_path=commands[1])
                     else:#目录不变
-                        self.my_file_manager.cd(dir_path=os.sep)
+                        self.my_filemanager.cd(dir_path=os.sep)
 
-                elif tool == 'rm':
+                elif order == 'rm':
                     if argc >= 2:
-                        if command_split[1][0] == '-':
-                            mode = command_split[1]
-                            path_list = command_split[2:]
+                        if commands[1][0] == '-':
+                            mode = commands[1]
+                            path_list = commands[2:]
                             if len(path_list) == 0:
-                                self.report_error(cmd=tool)
+                                self.report_error(cmd=order)
                         else:
                             mode = ''
-                            path_list = command_split[1:]
+                            path_list = commands[1:]
                         for path in path_list:
-                            self.my_file_manager.rm(file_path=path, mode=mode)
+                            self.my_filemanager.rm(file_path=path, mode=mode)
                     else:
-                        self.report_error(cmd=tool)
+                        self.report_error(cmd=order)
 
-                elif tool == 'mkf':
+                elif order == 'mkf':
                     #lsy 新增逻辑 实现mkf可变参数 content可以省略问题
                     if argc == 5:
-                        self.my_file_manager.mkf(
-                            file_path=command_split[1],
-                            file_type=command_split[2],
-                            size=command_split[3],
+                        self.my_filemanager.mkf(
+                            file_path=commands[1],
+                            file_type=commands[2],
+                            size=commands[3],
                             # 新增 lsy
-                            content=command_split[4])
+                            content=commands[4])
                     elif argc == 4:
-                        self.my_file_manager.mkf(
-                            file_path=command_split[1],
-                            file_type=command_split[2],
-                            size=command_split[3])
+                        self.my_filemanager.mkf(
+                            file_path=commands[1],
+                            file_type=commands[2],
+                            size=commands[3])
                     else:
-                        self.report_error(cmd=tool)
+                        self.report_error(cmd=order)
 
-                elif tool == 'mkdir':
+                elif order == 'mkdir':
                     if argc >= 2:
-                        for path in command_split[1:]:
-                            self.my_file_manager.mkdir(dir_path=path)
+                        for path in commands[1:]:
+                            self.my_filemanager.mkdir(dir_path=path)
                     else:
-                        self.report_error(cmd=tool)
+                        self.report_error(cmd=order)
 
-                elif tool == 'dss':
-                    self.my_file_manager.showBlockStatus()
+                elif order == 'dss':
+                    self.my_filemanager.showBlockStatus()
 
-                elif tool == 'dms':
-                    self.my_memory_manager.display_memory_status()
-                    # self.my_shell.block(func=self.my_memory_manager.display_memory_status)
+                elif order == 'dms':
+                    self.my_memorymanager.display_memory_status()
+                    # self.my_shell.block(func=self.my_memorymanager.display_memory_status)
 
-                elif tool == 'exec':
+                elif order == 'exec':
                     if argc >= 2:
-                        path_list = command_split[1:]
+                        path_list = commands[1:]
                         for path in path_list:
-                            my_file = self.my_file_manager.getFileCatchE(
-                                file_path=path, seek_algo=seek_algo)
+                            my_file = self.my_filemanager.getFileCatchE(
+                                file_path=path)
                             if my_file:
                                 if my_file['type'][3] == 'x':
-                                    self.my_process_manager.create_process(
-                                        file=my_file)
+                                    self.my_processmanager.create(
+                                        exefile=my_file)
                                 else:
                                     self.report_error(
-                                        cmd=tool, err_msg='no execution permission')
+                                        cmd=order, err_msg='no execution permission')
                             else:
-                                self.report_error(cmd=tool)
+                                self.report_error(cmd=order)
                     else:
-                        self.report_error(cmd=tool)
+                        self.report_error(cmd=order)
 
 
-                elif tool == 'ps':
-                    self.my_process_manager.print_process_status()
+                elif order == 'ps':
+                    self.my_processmanager.print_process_status()
                     
                
-                elif tool == 'kill':
+                elif order == 'kill':
                     if argc >= 2:
-                        for pid in command_split[1:]:
+                        for pid in commands[1:]:
                             pid_to_kill = int(pid)
-                            kill_res = self.my_process_manager.kill_process(
+                            kill_res = self.my_processmanager.kill(
                                 pid=pid_to_kill)
                             if kill_res:
-                                self.my_memory_manager.free(pid=pid_to_kill)
+                                self.my_memorymanager.free(pid=pid_to_kill)
                     else:
-                        self.report_error(cmd=tool)
+                        self.report_error(cmd=order)
 
-                elif tool == 'exit':
-                    self.my_process_manager.running = False
+                elif order == 'exit':
+                    self.my_processmanager.running = False
                     exit(0)
 
                 else:
@@ -191,6 +212,17 @@ class Kernel:
 
 
 if __name__ == '__main__':
+
+    _logFmt = logging.Formatter('%(asctime)s %(levelname).1s %(lineno)-3d %(funcName)-20s %(message)s', datefmt='%H:%M:%S')
+    _consoleHandler = logging.StreamHandler()
+    _consoleHandler.setLevel(logging.DEBUG)
+    _consoleHandler.setFormatter(_logFmt)
+
+    log = logging.getLogger(__file__)
+    log.addHandler(_consoleHandler)
+    log.setLevel(logging.DEBUG)
+
+
     init(autoreset=True)
     my_kernel = Kernel()
     my_kernel.run()
