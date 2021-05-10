@@ -40,7 +40,9 @@ class Kernel:
     def help_command(self,cmdList):
         command_info = {
             'man': 'manual page, format: man [command1] [command2] ...',
+            'time':'watch current date and time',
             'sudo': 'enter administrator mode,then you need input name and password,format:sudo',
+            'pwd':'print current file path',
             'ls': 'list directory contents, format: ls [-a|-l|-al] [path]',
             'cd': 'change current working directory, format: cd [path]',
             'rm': 'remove file or directory recursively, format: rm [-r|-f|-rf] path',
@@ -49,11 +51,11 @@ class Kernel:
             'dss': 'display storage status, format: dss',
             'dms': 'display memory status, format: dms',
             'exec': 'execute file, format: exec path',            
-            'ps': 'display process status, format: ps',           
-            #'mon': 'start monitoring system resources, format: mon [-o], use -o to stop',
+            'ps': 'display process status, format: ps',       
+            
             'td': 'tidy and defragment your disk, format: td',
             'kill': 'kill process, format: kill [pid]',
-            'exit': 'exit SwiftOS'
+            'exit': 'exit SwiftOS cmd back to login page'
         }
         if len(cmdList) == 0:
             cmdList = command_info.keys()
@@ -71,13 +73,11 @@ class Kernel:
 
 
     def run(self):
-                
-        #print("*****",const.option)
-        
+             
         while True:
             # a list of commands split by space or tab
             current_file = self.my_filemanager.pathToDictionary('').keys()       
-            command_list = self.my_shell.get_split_command(cwd=self.my_filemanager.current_working_path, file_list=current_file, userStatus=self.userStatus)
+            command_list = self.my_shell.get_split_command(cwd='@'+self.username+ os.sep + self.my_filemanager.current_working_path, file_list=current_file, userStatus=self.userStatus)
 
             if len(command_list) == 0:
                 continue
@@ -92,16 +92,18 @@ class Kernel:
                     self.help_command(cmdList=commands[1:])
 
                 elif order == 'time':
-                    print("current time:",datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                    print("current time: ",datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
-                elif order =='sudo':
-                    print('please input username: ')
-                    input(name)
-                    print('password:')
-                    input(passwd)
+                elif order == 'pwd':
+                    print("current path: ",os.getcwd())
 
+                elif order =='sudo':                    
+                    pw = input('please input adminPassword: ')
+                    if pw == "swiftos":  #固定的口令
+                        userStatus = 1
+                    else:
+                        print("error adminPassword!!")
 
-                    #if name in 
 
                 elif order == 'ls':
                     if argc >= 2:

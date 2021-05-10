@@ -293,13 +293,10 @@ class FileManager:
         self.file_separator = os.sep
         # os.getcwd() 方法用于返回当前工作目录
         self.root_path = os.getcwd() + self.file_separator + 'SwiftOS_files' + self.file_separator + username  # Win下为\, linux下需要修改!
-        print("*****"+self.root_path)
-
+       
         # 当前工作目录相对路径, 可以与root_path一起构成绝对路径
         #self.current_working_path = self.file_separator + '@' + username + self.file_separator
         self.current_working_path = self.file_separator
-
-        print("*****"+self.current_working_path)
 
         self.block_size = block_size
         self.block_number = tracks * secs
@@ -534,9 +531,9 @@ class FileManager:
             if current_working_dict[3] == 'x':
                 if mode == '-l' or mode == '-al': # '-l' 要求输出current_working_dict
                     # 特殊颜色
-                    print(current_working_dict, '\t', '\033[1;33;47m' + basename + '\033[0m')
+                    print(current_working_dict, '\t', '\033[1;33m' + basename + '\033[0m')
                 else:
-                    print('\033[1;33;47m' + basename + '\033[0m', '    ', end='')
+                    print('\033[1;33m' + basename + '\033[0m', '    ', end='')
             else:
                 if mode == '-l' or mode == '-al':
                     print(current_working_dict, '\t', basename)
@@ -565,9 +562,9 @@ class FileManager:
                 # 可执行文件高亮红色显示
                 elif current_working_dict[file][0] == 'e':
                     if mode == '-l' or mode == '-al':
-                        print(current_working_dict[file], '\t', '\033[31;47m' + file + '\033[0m')
+                        print(current_working_dict[file], '\t', '\033[31m' + file + '\033[0m')
                     else:
-                        print('\033[31;47m' + file + '\033[0m', '    ', end='')
+                        print('\033[31m' + file + '\033[0m', '    ', end='')
                 else:
                     if mode == '-l' or mode == '-al':
                         print(current_working_dict[file], '\t', file)
