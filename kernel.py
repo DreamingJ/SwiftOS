@@ -7,7 +7,7 @@ from shell import Shell
 from file_manager import FileManager
 from memory_manager import MemoryManager
 from process_manager import ProcessManager
-from config import *
+from settings.config import Config
 import os
 import threading
 import matplotlib
@@ -16,13 +16,14 @@ import matplotlib
 class Kernel:
     def __init__(self):
         self.my_shell = Shell()
-        self.my_file_manager = FileManager(storage_block_size,
-                                           storage_track_num, storage_sec_num)
+        self.my_file_manager = FileManager(Config.storage_block_size,
+                                           Config.storage_track_num,
+                                           Config.storage_sec_num)
         self.my_memory_manager = MemoryManager(
-            mode=memory_management_mode,
-            page_size=memory_page_size,
-            page_number=memory_page_number,
-            physical_page=memory_physical_page_number)
+            mode=Config.memory_management_mode,
+            page_size=Config.memory_page_size,
+            page_number=Config.memory_page_number,
+            physical_page=Config.memory_physical_page_number)
         self.my_process_manager = ProcessManager(self.my_memory_manager)
 
         self.is_monitoring = False
@@ -32,9 +33,10 @@ class Kernel:
         self.my_process_manager_run_thread.start()
 
         # printer Threading
-        self.IOdevice_thread = threading.Thread(target=self.my_process_manager.io_device_handler)
+        self.IOdevice_thread = threading.Thread(
+            target=self.my_process_manager.io_device_handler)
         self.IOdevice_thread.start()
-        
+
         # signal.signal(signal.SIGINT, self.my_shell.deblock)
 
     # monitoring all resources
@@ -178,7 +180,7 @@ class Kernel:
                         path_list = command_split[1:]
                         for path in path_list:
                             my_file = self.my_file_manager.get_file(
-                                file_path=path, seek_algo=seek_algo)
+                                file_path=path, seek_algo=Config.seek_algo)
                             if my_file:
                                 if my_file['type'][3] == 'x':
                                     self.my_process_manager.create(

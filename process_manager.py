@@ -5,7 +5,7 @@ import sys
 import time
 import copy
 import threading
-from config import *
+from settings.config import Config
 from memory_manager import MemoryManager
 
 
@@ -22,13 +22,13 @@ class PCB(object):
         self.priority = priority  # 0 is higher than 1
         self.msize = msize
         self.parent_id = -1
-        self.child_pid_list = []    
+        self.child_pid_list = []
         self.create_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         self.status = 'ready'
 
         self.tasklist = []
         for task in content:
-            info = str.split(task)  
+            info = str.split(task)
             if len(info) > 1:
                 if info[0] == 'cpu':
                     info[1] = float(info[1])
@@ -57,10 +57,10 @@ class ProcessManager(object):
         self.waiting_queue = []
         self.p_running = None
         self.is_running = False
-        self.memory_manager=memory_manager
-        self.time_slot=time_slot_conf
-        self.priority=priority
-        self.printer_num = printer_num_conf
+        self.memory_manager = memory_manager
+        self.time_slot = Config.time_slot_conf
+        self.priority = priority
+        self.printer_num = Config.printer_num_conf
         self.mem_of_pid = {}
 
     def create(self, exefile):
@@ -68,11 +68,13 @@ class ProcessManager(object):
         if exefile['type'][0] != 'e':
             self.error_handler('exec')
         else:
-            mem_no = self.memory_manager.alloc(self.pid_no, int(exefile['size'])) 
+            mem_no = self.memory_manager.alloc(self.pid_no,
+                                               int(exefile['size']))
             if mem_no == -1:
                 self.error_handler('mem')
             else:
-                pcb = PCB(self.pid_no, exefile['name'], exefile['priority'], exefile['content'], int(exefile['size']))
+                pcb = PCB(self.pid_no, exefile['name'], exefile['priority'],
+                          exefile['content'], int(exefile['size']))
                 self.pcblist.append(pcb)
                 self.mem_of_pid[pcb.pid] = mem_no
                 print(f'[pid {pcb.pid}] process created successfully.')
@@ -82,16 +84,17 @@ class ProcessManager(object):
     def fork(self):
         """ 创建子进程 """
         child_msize = self.p_running.msize
-        mem_no = self.memory_manager.alloc(self.pid_no, child_msize) 
+        mem_no = self.memory_manager.alloc(self.pid_no, child_msize)
         if mem_no == -1:
             self.error_handler('mem')
-        else:            
+        else:
             # self.p_running.current_task += 1
             # 初始化子进程pcb
-            child_pcb = copy.deepcopy(self.p_running) 
+            child_pcb = copy.deepcopy(self.p_running)
             child_pcb.pid = self.pid_no
             child_pcb.parent_id = self.p_running.pid
-            child_pcb.create_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+            child_pcb.create_time = time.strftime('%Y-%m-%d %H:%M:%S',
+                                                  time.localtime())
             # 子进程下一task
             child_pcb.current_task += 1
 
@@ -99,8 +102,11 @@ class ProcessManager(object):
             self.ready_queue[child_pcb.priority].append(child_pcb.pid)
             self.pid_no += 1
             self.p_running.child_pid_list.append(child_pcb)
-            sys.stdout.write('\033[2K\033[1G\033[3D')  # to remove extra output \$
-            print(f'[pid {child_pcb.pid}] process forked successfully by [pid {child_pcb.parent_id}].')
+            sys.stdout.write(
+                '\033[2K\033[1G\033[3D')  # to remove extra output \$
+            print(
+                f'[pid {child_pcb.pid}] process forked successfully by [pid {child_pcb.parent_id}].'
+            )
 
     def dispatch(self):
         """ 调度进程，ready->running """
@@ -129,7 +135,6 @@ class ProcessManager(object):
         # waiting queue： [[pid1, time], [pid2, time]]
         self.waiting_queue.append([self.p_running.pid, io_time])
 
-
     def io_completion(self, pid):
         """ io完成，进程被唤醒，waiting->ready """
         self.printer_num += 1
@@ -138,7 +143,6 @@ class ProcessManager(object):
             self.pcblist[pid].status = 'ready'
             level = self.pcblist[pid].priority
             self.ready_queue[level].append(pid)
-
 
     def kill(self, pid):
         """ kill进程，释放所属资源. 考虑和run守护进程的互斥 """
@@ -161,21 +165,23 @@ class ProcessManager(object):
                 self.pcblist[pid].status = 'terminated'
                 # 释放内存资源
                 self.memory_manager.free(pid)
-                
 
     def keep_next_task(self, pid):
         # 若当前是进程的最后一条task，转为结束态
-        if self.pcblist[pid].current_task == len(self.pcblist[pid].tasklist)-1 :
-            if(self.memory_manager.free(pid)):
+        if self.pcblist[pid].current_task == len(
+                self.pcblist[pid].tasklist) - 1:
+            if (self.memory_manager.free(pid)):
                 # 从就绪队列取出
                 self.ready_queue[self.pcblist[pid].priority].remove(pid)
                 self.pcblist[pid].status = 'terminated'
                 print(f'[Pid #{pid}] finished.')
             else:
                 # 该进程对应的内存空间已被释放
-                print("Failed to free, the memory of [Pid %d] has been freed." % pid)
+                print(
+                    "Failed to free, the memory of [Pid %d] has been freed." %
+                    pid)
             return False
-        else:   # 继续下一个task
+        else:  # 继续下一个task
             self.pcblist[pid].current_task += 1
             return True
 
@@ -184,15 +190,18 @@ class ProcessManager(object):
         running = False
         for pro in self.pcblist:
             if pro.status != 'terminated':
-                print("[pid #%5d] name: %-10s status: %-20s create_time: %s" % (pro.pid, pro.pname, pro.status, pro.create_time))
+                print("[pid #%5d] name: %-10s status: %-20s create_time: %s" %
+                      (pro.pid, pro.pname, pro.status, pro.create_time))
                 running = True
         if not running:
             print("No process is running currently")
 
     def print_resource_status(self):
         """ 获取设备资源状态 """
-        if self.printer_num == printer_num_conf:
-            print(f'No Printer is using,there are {self.printer_num} Printer is free')
+        if self.printer_num == Config.printer_num_conf:
+            print(
+                f'No Printer is using,there are {self.printer_num} Printer is free'
+            )
         else:
             print(f'{self.printer_num} Printer is using')
 
@@ -208,11 +217,11 @@ class ProcessManager(object):
                 self.kill(int(s[1]))
             elif s[0] == 'exec':
                 # 需配合文件管理模块
-                exefile = self.file_manager.get_file(file_path=s[1], seek_algo=seek_algo)
+                exefile = self.file_manager.get_file(file_path=s[1],
+                                                     seek_algo=Config.seek_algo)
                 self.create(exefile)
             else:
                 print('command not found: %s' % s[0])
-
 
     def io_device_handler(self):
         """ 守护线程，模拟IO设备运行 """
@@ -246,10 +255,12 @@ class ProcessManager(object):
                     continue
                 elif task[0] == 'access':
                     self.memory_manager.access(self.p_running.pid, task[1])
-                    print(f'[pid {self.p_running.pid}] process accessed [memory {task[1]}] successfully.')
+                    print(
+                        f'[pid {self.p_running.pid}] process accessed [memory {task[1]}] successfully.'
+                    )
                     self.timeout()
                     self.keep_next_task(self.p_running.pid)
-                    continue        
+                    continue
                 elif task[0] == 'printer':
                     self.io_wait()
                     # TODO 加入队列后下一条
@@ -261,13 +272,14 @@ class ProcessManager(object):
                         continue
                     else:
                         time.sleep(task[1])
-                        print(f'[pid {self.p_running.pid}] process activaly released cpu.')
+                        print(
+                            f'[pid {self.p_running.pid}] process activaly released cpu.'
+                        )
                         if self.keep_next_task(self.p_running.pid) == True:
                             self.p_running.status = 'ready'
                             level = self.p_running.priority
                             self.ready_queue[level].append(self.p_running.pid)
-                            continue        
-            
+                            continue
 
     def error_handler(self, type, pid=-1):
         if type == 'mem':
@@ -277,13 +289,17 @@ class ProcessManager(object):
         elif type == 'kill_nopid':
             print(f'kill: kill [pid #{pid}] failed: no such process')
         elif type == 'kill_already':
-            print(f'kill: kill [pid #{pid}] failed: the process is already terminiated')
+            print(
+                f'kill: kill [pid #{pid}] failed: the process is already terminiated'
+            )
 
-
+'''
+模块单独测试时使用
 if __name__ == '__main__':
-    memory = MemoryManager(mode=memory_management_mode,page_size=memory_page_size,
-                                                page_number=memory_page_number,
-                                                physical_page=memory_physical_page_number)
+    memory = MemoryManager(mode=memory_management_mode,
+                           page_size=memory_page_size,
+                           page_number=memory_page_number,
+                           physical_page=memory_physical_page_number)
     pm = ProcessManager(memory)
     # 三个线程负责输入、后台逻辑、io设备运行
     input_thread = threading.Thread(target=pm.input_handler)
@@ -295,3 +311,4 @@ if __name__ == '__main__':
     IOdevice_thread.setDaemon(True)
     logical_thread.start()
     IOdevice_thread.start()
+'''
