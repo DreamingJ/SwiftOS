@@ -5,7 +5,7 @@ import sys
 import time
 import copy
 import threading
-from config import *
+from config import Config
 from memory_manager import MemoryManager
 
 
@@ -40,7 +40,7 @@ class PCB(object):
 
 class ProcessManager(object):
     """ Provide functions to manage process"""
-    def __init__(self, memory_manager, priority=True):
+    def __init__(self, memory_manager,time_slot_conf,priority,printer_num_conf):
         """ 
         Args:
             pid_no: 下个进程的序号
@@ -58,9 +58,9 @@ class ProcessManager(object):
         self.p_running = None
         self.is_running = False
         self.memory_manager=memory_manager
-        self.time_slot=time_slot_conf
-        self.priority=priority
-        self.printer_num = printer_num_conf
+        self.time_slot=COnfig.time_slot_conf
+        self.priority=Config.priority
+        self.printer_num = Config.printer_num_conf
         self.mem_of_pid = {}
 
     def create(self, exefile):
@@ -138,6 +138,9 @@ class ProcessManager(object):
             self.pcblist[pid].status = 'ready'
             level = self.pcblist[pid].priority
             self.ready_queue[level].append(pid)
+
+    def io_interrupt(self,pid):
+        """  """
 
 
     def kill(self, pid):

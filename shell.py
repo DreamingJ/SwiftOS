@@ -11,6 +11,9 @@ class Shell:
     def __init__(self):
         self.block_flag = False
         self.clear_cmd_str = 'cls' if platform.system() == 'Windows' else 'clear'
+        
+        print ("****"+clear_cmd_str )
+        
         self.print_system_info()
 
     def print_system_info(self):
@@ -45,13 +48,3 @@ class Shell:
                     commands[i].append(arg)
         # print(commands)
         return commands
-
-    def deblock(self):
-        self.block_flag = False
-
-    def block(self, func, interval=1):
-        self.block_flag = True
-        while self.block_flag:
-            os.system(self.clear_cmd_str)
-            func()
-            sleep(interval)
