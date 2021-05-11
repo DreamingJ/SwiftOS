@@ -8,73 +8,83 @@ from file_manager import FileManager
 from memory_manager import MemoryManager
 from process_manager import ProcessManager
 from config import *
+from devices import Printer, Disk
 import os
 import threading
 import logging
 #from . import config
 
+
 class Kernel:
     def __init__(self):
 
         self.my_shell = Shell()
-        self.my_filemanager = FileManager(storage_block_size, storage_track_num, storage_sec_num,seek_algo)
-        self.my_memorymanager = MemoryManager(storage_mode, option, page_size, page_total,
-                 frame_size, frame_total)
-        self.my_processmanager = ProcessManager(self.my_memorymanager,time_slot_conf,priority_conf,printer_num_conf)
+        self.my_printer = Printer()
+        self.my_disk = Disk()
+        self.my_filemanager = FileManager(storage_block_size,
+                                          storage_track_num, storage_sec_num,
+                                          seek_algo)
+        self.my_memorymanager = MemoryManager(storage_mode, option, page_size,
+                                              page_total, frame_size,
+                                              frame_total)
+        self.my_processmanager = ProcessManager(self.my_memorymanager)
 
-    
-        self.logical_thread_run = threading.Thread(target=self.my_processmanager.start_manager)
-        self.IOdevice_thread_run = threading.Thread(target=self.my_processmanager.io_device_handler)
-            
+        self.logical_thread_run = threading.Thread(
+            target=self.my_processmanager.start_manager)
+        self.IOdevice_thread_run = threading.Thread(
+            target=self.my_printer.io_device_handler,
+            args=(self.my_processmanager.waiting_queue, self.my_processmanager.io_completion))
+
         self.logical_thread_run.setDaemon(True)
         self.IOdevice_thread_run.setDaemon(True)
         self.logical_thread_run.start()
         self.IOdevice_thread_run.start()
-    
 
-
-    def help_command(self,cmdList):
+    def help_command(self, cmdList):
         command_info = {
             'man': 'manual page, format: man [command1] [command2] ...',
-            'sudo': 'enter administrator mode,then you need input name and password,format:sudo',
+            'sudo':
+            'enter administrator mode,then you need input name and password,format:sudo',
             'ls': 'list directory contents, format: ls [-a|-l|-al] [path]',
             'cd': 'change current working directory, format: cd [path]',
-            'rm': 'remove file or directory recursively, format: rm [-r|-f|-rf] path',
+            'rm':
+            'remove file or directory recursively, format: rm [-r|-f|-rf] path',
             'mkdir': 'create directory, format: mkdir [path]',
             'mkf': 'create common file, format: mkf path type size',
             'dss': 'display storage status, format: dss',
             'dms': 'display memory status, format: dms',
-            'exec': 'execute file, format: exec path',            
-            'ps': 'display process status, format: ps',           
-            #'mon': 'start monitoring system resources, format: mon [-o], use -o to stop',
+            'exec': 'execute file, format: exec path',
+            'ps': 'display process status, format: ps',
+            'rs': 'display resource status, format: rs',
             'td': 'tidy and defragment your disk, format: td',
             'kill': 'kill process, format: kill [pid]',
             'exit': 'exit SwiftOS'
         }
         if len(cmdList) == 0:
             cmdList = command_info.keys()
-            print('please input which you want to inquiry',cmdList)
+            print('please input which you want to inquiry', cmdList)
         for cmd in cmdList:
             if cmd in command_info.keys():
-                print(cmd,'--',command_info[cmd])
+                print(cmd, '--', command_info[cmd])
             else:
-                print('error!!'+cmd+'no such command')
+                print('error!!' + cmd + 'no such command')
 
     def report_error(self, cmd, err_msg=''):
         print('[error %s] %s' % (cmd, err_msg))
         if err_msg == '':
             self.help_command(cmdList=[cmd])
 
-
     def run(self):
         userStatus = 0
-        
+
         #print("*****",const.option)
-        
+
         while True:
             # a list of commands split by space or tab
-            current_file = self.my_filemanager.pathToDictionary('').keys()       
-            command_list = self.my_shell.get_split_command(cwd=self.my_filemanager.current_working_path,file_list=current_file)
+            current_file = self.my_filemanager.pathToDictionary('').keys()
+            command_list = self.my_shell.get_split_command(
+                cwd=self.my_filemanager.current_working_path,
+                file_list=current_file)
 
             if len(command_list) == 0:
                 continue
@@ -82,23 +92,22 @@ class Kernel:
                 if len(commands) == 0:
                     continue
 
-                order = commands[0] #命令头名字
+                order = commands[0]  #命令头名字
                 argc = len(commands)
 
                 if order == 'man':
                     self.help_command(cmdList=commands[1:])
 
-                elif order == 'time':
-                    print("current time:",datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                # elif order == 'time':
+                #     print("current time:",datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
-                elif order =='sudo':
-                    print('please input username: ')
-                    input(name)
-                    print('password:')
-                    input(passwd)
+                # elif order =='sudo':
+                #     print('please input username: ')
+                #     input(name)
+                #     print('password:')
+                #     input(passwd)
 
-
-                    #if name in 
+                #if name in
 
                 elif order == 'ls':
                     if argc >= 2:
@@ -118,7 +127,7 @@ class Kernel:
                 elif order == 'cd':
                     if argc >= 2:
                         self.my_filemanager.cd(dir_path=commands[1])
-                    else:#目录不变
+                    else:  #目录不变
                         self.my_filemanager.cd(dir_path=os.sep)
 
                 elif order == 'rm':
@@ -146,10 +155,9 @@ class Kernel:
                             # 新增 lsy
                             content=commands[4])
                     elif argc == 4:
-                        self.my_filemanager.mkf(
-                            file_path=commands[1],
-                            file_type=commands[2],
-                            size=commands[3])
+                        self.my_filemanager.mkf(file_path=commands[1],
+                                                file_type=commands[2],
+                                                size=commands[3])
                     else:
                         self.report_error(cmd=order)
 
@@ -179,17 +187,19 @@ class Kernel:
                                         exefile=my_file)
                                 else:
                                     self.report_error(
-                                        cmd=order, err_msg='no execution permission')
+                                        cmd=order,
+                                        err_msg='no execution permission')
                             else:
                                 self.report_error(cmd=order)
                     else:
                         self.report_error(cmd=order)
 
-
                 elif order == 'ps':
                     self.my_processmanager.print_process_status()
-                    
-               
+
+                elif order == 'rs':
+                    self.my_printer.print_resource_status()
+
                 elif order == 'kill':
                     if argc >= 2:
                         for pid in commands[1:]:
@@ -209,11 +219,11 @@ class Kernel:
                     print('ERROR!!no such command!')
 
 
-
-
 if __name__ == '__main__':
 
-    _logFmt = logging.Formatter('%(asctime)s %(levelname).1s %(lineno)-3d %(funcName)-20s %(message)s', datefmt='%H:%M:%S')
+    _logFmt = logging.Formatter(
+        '%(asctime)s %(levelname).1s %(lineno)-3d %(funcName)-20s %(message)s',
+        datefmt='%H:%M:%S')
     _consoleHandler = logging.StreamHandler()
     _consoleHandler.setLevel(logging.DEBUG)
     _consoleHandler.setFormatter(_logFmt)
@@ -221,7 +231,6 @@ if __name__ == '__main__':
     log = logging.getLogger(__file__)
     log.addHandler(_consoleHandler)
     log.setLevel(logging.DEBUG)
-
 
     init(autoreset=True)
     my_kernel = Kernel()

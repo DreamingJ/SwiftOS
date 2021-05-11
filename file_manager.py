@@ -6,6 +6,7 @@ import time
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from config import *
 
 ##############################################
 # Disk存储区块框架：  

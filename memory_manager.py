@@ -188,6 +188,8 @@ class MemoryManager:
             print("进程释放空间成功！")
         else:  # 如果该进程未建页表
             print("错误：没有为%d号进程分配虚拟内存" % process_id)
+            return False
+        return True
 
     def free_continue(self, process_id):
         """

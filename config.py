@@ -17,7 +17,7 @@ frame_total=6
 
 priority_conf = True
 preemptive = True
-time_slot_conf = 1
+time_slot_conf = 0.1
 cpu_num = 1
 printer_num_conf = 1
 
