@@ -1,10 +1,14 @@
 import time
 from config import *
-
+import logging
 
 class Printer(object):
     def __init__(self):
         self.printer_num = printer_num_conf
+        logging.basicConfig(level=logging.INFO,
+                    filename='log.txt',
+                    filemode='w', # w就是写模式，a是追加模式
+                    format='%(asctime)s - %(message)s')
 
 
     def print_resource_status(self):
@@ -28,7 +32,7 @@ class Printer(object):
 
                 # io完成
                 self.printer_num += 1
-                print(f'[pid {pid}] process I/O successfully.')
+                logging.info(f'[pid {pid}] process I/O successfully.')
                 io_completion(pid)        
 
 

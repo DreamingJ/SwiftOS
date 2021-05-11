@@ -97,7 +97,7 @@ class Disk:
             this_time_byte = this_time_byte + self.sector_size
         self.total_time = self.total_time + this_time_time
         self.total_byte = self.total_byte + this_time_byte
-        print("Time Total: ", round(this_time_time * 1000, 5), "ms")
+        print("Access Disk Time total: ", round(this_time_time * 1000, 5), "ms")
         # print(total_track_distance)
         self.total_speed_list.append(self.total_byte / self.total_time)
         self.speed_list.append(this_time_byte / this_time_time)
@@ -231,7 +231,6 @@ class Disk:
         for seek_addr in seek_queue:
             track_queue.append(seek_addr[0])
 
-        print(algo, track_queue) # seek_queue, 
 
 ##############################################
 # block存储区块框架功能：  
@@ -356,14 +355,10 @@ class FileManager:
                     # 相对路径
                     if file_path[0] != self.file_separator:
                         gf_path = self.root_path + self.current_working_path + file_path
-                        print("*******1"+gf_path)
                     # 绝对路径
                     else:
                         gf_path = self.root_path + file_path
-                        print("*******2"+gf_path)
-
                     seek_queue = self.fpToLoc(file_path)
-                    print(seek_queue)
                     if self.seek_algo == 'FCFS':
                         self.disk.FCFS(seek_queue)
                     elif self.seek_algo == 'SSTF':

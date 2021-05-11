@@ -48,5 +48,5 @@ class Shell:
                             commands[i].append(match_res.group(0))
                 if match_flag is False:
                     commands[i].append(arg)
-        # print(commands)
+
         return commands

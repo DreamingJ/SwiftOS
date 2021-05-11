@@ -182,7 +182,6 @@ class Kernel:
                         for path in path_list:
                             my_file = self.my_filemanager.getFileCatchE(
                                 file_path=path)
-                            print("******"+path)
                             if my_file:
                                 if my_file['type'][3] == 'x':
                                     self.my_processmanager.create(
