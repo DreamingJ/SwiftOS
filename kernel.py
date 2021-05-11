@@ -10,20 +10,24 @@ from process_manager import ProcessManager
 from config import *
 from devices import Printer, Disk
 import os
+import sys
 import threading
 import logging
+import datetime
 #from . import config
 
 
 class Kernel:
-    def __init__(self):
+    def __init__(self,):
+        self.userStatus = 0
 
         self.my_shell = Shell()
+        self.username = sys.argv[1]
         self.my_printer = Printer()
         self.my_disk = Disk()
         self.my_filemanager = FileManager(storage_block_size,
                                           storage_track_num, storage_sec_num,
-                                          seek_algo)
+                                          seek_algo, self.username)
         self.my_memorymanager = MemoryManager(storage_mode, option, page_size,
                                               page_total, frame_size,
                                               frame_total)
@@ -43,8 +47,9 @@ class Kernel:
     def help_command(self, cmdList):
         command_info = {
             'man': 'manual page, format: man [command1] [command2] ...',
-            'sudo':
-            'enter administrator mode,then you need input name and password,format:sudo',
+            'time':'watch current date and time',
+            'sudo': 'enter administrator mode,then you need input name and password,format:sudo',
+            'pwd':'print current file path',
             'ls': 'list directory contents, format: ls [-a|-l|-al] [path]',
             'cd': 'change current working directory, format: cd [path]',
             'rm':
@@ -58,7 +63,7 @@ class Kernel:
             'rs': 'display resource status, format: rs',
             'td': 'tidy and defragment your disk, format: td',
             'kill': 'kill process, format: kill [pid]',
-            'exit': 'exit SwiftOS'
+            'exit': 'exit SwiftOS cmd back to login page'
         }
         if len(cmdList) == 0:
             cmdList = command_info.keys()
@@ -75,16 +80,10 @@ class Kernel:
             self.help_command(cmdList=[cmd])
 
     def run(self):
-        userStatus = 0
-
-        #print("*****",const.option)
-
         while True:
             # a list of commands split by space or tab
-            current_file = self.my_filemanager.pathToDictionary('').keys()
-            command_list = self.my_shell.get_split_command(
-                cwd=self.my_filemanager.current_working_path,
-                file_list=current_file)
+            current_file = self.my_filemanager.pathToDictionary('').keys()       
+            command_list = self.my_shell.get_split_command(cwd='@'+self.username+ os.sep + self.my_filemanager.current_working_path, file_list=current_file, userStatus=self.userStatus)
 
             if len(command_list) == 0:
                 continue
@@ -98,16 +97,18 @@ class Kernel:
                 if order == 'man':
                     self.help_command(cmdList=commands[1:])
 
-                # elif order == 'time':
-                #     print("current time:",datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                elif order == 'time':
+                    print("current time: ",datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
-                # elif order =='sudo':
-                #     print('please input username: ')
-                #     input(name)
-                #     print('password:')
-                #     input(passwd)
+                elif order == 'pwd':
+                    print("current path: ",os.getcwd())
 
-                #if name in
+                elif order =='sudo':                    
+                    pw = input('please input adminPassword: ')
+                    if pw == "swiftos":  #固定的口令
+                        userStatus = 1
+                    else:
+                        print("error adminPassword!!")
 
                 elif order == 'ls':
                     if argc >= 2:

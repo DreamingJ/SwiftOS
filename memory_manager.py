@@ -1,7 +1,7 @@
 # coding=utf-8
 import numpy as np
 from operator import itemgetter, attrgetter
-import seaborn
+#import seaborn
 import pandas as pd
 import matplotlib.pyplot as plt
 import copy
