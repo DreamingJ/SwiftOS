@@ -135,7 +135,7 @@ class MemoryManager:
             self.free_virtual(process_id)
         else:
             self.virtual_allocated += size
-            print("分配成功！")
+            # print("分配成功！")
 
     def allocate_continue(self, process_id, size):
         """
@@ -185,7 +185,7 @@ class MemoryManager:
                     if p_table.table[i][3] != -1:
                         self.physical_memory[p_table.table[i][3]] = -1
                     p_table.delete(i)   # 删除页表项
-            print("进程释放空间成功！")
+            # print("进程释放空间成功！")
         else:  # 如果该进程未建页表
             print("错误：没有为%d号进程分配虚拟内存" % process_id)
             return False
@@ -255,18 +255,18 @@ class MemoryManager:
                         self.reference_queue.remove(idx)
                         self.reference_queue.append(idx)
                         physical_address = self.frame_size * self.physical_memory[p_table.table[idx][3]] + offset
-                        print("访问成功！物理地址为0x%-5x" % physical_address)
+                        # print("访问成功！物理地址为0x%-5x" % physical_address)
                         return physical_address
 
                     # 若访问的虚拟页没有分配物理页，进入按需调页（demanding paging)
                     elif self.swapping == 'LRU':
                         self.page_fault += 1  # 缺页次数+1
                         physical_address = self.frame_size * self.LRU(idx, p_table, process_id) + offset
-                        print("访问成功！物理地址为0x%-5x" % physical_address)
+                        # print("访问成功！物理地址为0x%-5x" % physical_address)
                     elif self.swapping == 'FIFO':
                         self.page_fault += 1  # 缺页次数+1
                         physical_address = self.frame_size * self.FIFO(idx, p_table, process_id) + offset
-                        print("访问成功！物理地址为0x%-5x" % physical_address)
+                        # print("访问成功！物理地址为0x%-5x" % physical_address)
                     else:
                         pass  # 待后续加入更多算法
                 else:

@@ -97,7 +97,7 @@ class Disk:
             this_time_byte = this_time_byte + self.sector_size
         self.total_time = self.total_time + this_time_time
         self.total_byte = self.total_byte + this_time_byte
-        print("Access Disk Time total: ", round(this_time_time * 1000, 5), "ms")
+        print("[Access Disk] Time total: ", round(this_time_time * 1000, 5), "ms")
         # print(total_track_distance)
         self.total_speed_list.append(self.total_byte / self.total_time)
         self.speed_list.append(this_time_byte / this_time_time)
@@ -355,10 +355,11 @@ class FileManager:
                     # 相对路径
                     if file_path[0] != self.file_separator:
                         gf_path = self.root_path + self.current_working_path + file_path
-                    # 绝对路径
+
                     else:
                         gf_path = self.root_path + file_path
                     seek_queue = self.fpToLoc(file_path)
+
                     if self.seek_algo == 'FCFS':
                         self.disk.FCFS(seek_queue)
                     elif self.seek_algo == 'SSTF':
@@ -844,6 +845,6 @@ if __name__ == '__main__':
     
 
     # demo.showBlockStatus()
-    print("####################")
+    # print("####################")
     # demo.showFileTree()
     

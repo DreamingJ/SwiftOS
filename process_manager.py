@@ -77,7 +77,7 @@ class ProcessManager(object):
                 pcb = PCB(self.pid_no, exefile['name'], exefile['priority'], exefile['content'], int(exefile['size']))
                 self.pcblist.append(pcb)
                 self.mem_of_pid[pcb.pid] = mem_no
-                print(f'[进程名 {pcb.pname} ]创建成功')
+                print(f'[进程名 {pcb.pname}]创建成功')
                 print("批处理任务开始执行，请在日志文件查看详细信息") 
                 logging.info(f'[pid {pcb.pid}] process created successfully.')
                 self.ready_queue[exefile['priority']].append(pcb.pid)
@@ -163,7 +163,7 @@ class ProcessManager(object):
                 self.pcblist[pid].status = 'terminated'
                 # 释放内存资源
                 self.memory_manager.free_memory(pid)
-                print('\033[0;32;40m The process terminated!\033[0m')
+                print(f'[pid  # {pid}] is killed successfully!')
 
     def keep_next_task(self, pid):
         # 若当前是进程的最后一条task，转为结束态
@@ -260,13 +260,13 @@ class ProcessManager(object):
 
     def error_handler(self, type, pid=-1):
         if type == 'mem':
-            logging.info("Failed to create new process: No enough memory.")
+            print("Failed to create new process: No enough memory.")
         elif type == 'exec':
-            logging.info('Failed to exucute: Not an executable file.')
+            print('Failed to exucute: Not an executable file.')
         elif type == 'kill_nopid':
-            logging.info(f'kill: kill [pid #{pid}] failed: no such process')
+            print(f'kill: kill [pid #{pid}] failed: no such process')
         elif type == 'kill_already':
-            logging.info(f'kill: kill [pid #{pid}] failed: the process is already terminiated')
+            print(f'kill: kill [pid #{pid}] failed: the process is already terminiated')
 
 '''
 if __name__ == '__main__':
