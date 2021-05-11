@@ -206,10 +206,9 @@ class Kernel:
                     if argc >= 2:
                         for pid in commands[1:]:
                             pid_to_kill = int(pid)
-                            kill_res = self.my_processmanager.kill(
+                            self.my_processmanager.kill(
                                 pid=pid_to_kill)
-                            if kill_res:
-                                self.my_memorymanager.free(pid=pid_to_kill)
+                            
                     else:
                         self.report_error(cmd=order)
 

@@ -96,7 +96,7 @@ class ProcessManager(object):
             self.ready_queue[child_pcb.priority].append(child_pcb.pid)
             self.pid_no += 1
             self.p_running.child_pid_list.append(child_pcb)
-            sys.stdout.write('\033[2K\033[1G\033[3D')  # to remove extra output \$
+            sys.stdout.write('\033[2K\033[1G\033[9D')  # to remove extra output \$
             print(f'[pid {child_pcb.pid}] process forked successfully by [pid {child_pcb.parent_id}].')
 
     def dispatch(self):
@@ -150,11 +150,13 @@ class ProcessManager(object):
                 elif status == 'running':
                     self.p_running = None
                 elif status == 'waiting':
-                    self.waiting_queue.remove(pid)
+                    for index in range(len(self.waiting_queue)):
+                        if self.waiting_queue[index][0] == pid: 
+                            self.waiting_queue.pop(index)
                 self.pcblist[pid].status = 'terminated'
                 # 释放内存资源
                 self.memory_manager.free_memory(pid)
-                
+                print('\033[0;32;40m The process terminated!\033[0m')
 
     def keep_next_task(self, pid):
         # 若当前是进程的最后一条task，转为结束态
@@ -163,11 +165,11 @@ class ProcessManager(object):
                 # 从就绪队列取出
                 self.ready_queue[self.pcblist[pid].priority].remove(pid)
                 self.pcblist[pid].status = 'terminated'
-                print(f'[Pid #{pid}] finished.')
+                print(f'[Pid #{pid}] terminated!')
                 # 就绪队列是否为空, 判断文件执行完成
                 exe_completed = True
-                for level in range(0, len(self.ready_queue)):
-                    if self.ready_queue[level]:
+                for pro in self.pcblist:
+                    if pro.status != 'terminated':
                         exe_completed = False
                         break
                 if(exe_completed):
@@ -240,7 +242,7 @@ class ProcessManager(object):
                         continue
                     else:
                         time.sleep(task[1])
-                        print(f'[pid {self.p_running.pid}] process completed a cpu task.')
+                        print(f'[pid {self.p_running.pid}] process completed a cpu task successfully.')
                         if self.keep_next_task(self.p_running.pid) == True:
                             self.p_running.status = 'ready'
                             level = self.p_running.priority
