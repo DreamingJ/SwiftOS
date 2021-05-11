@@ -1,5 +1,4 @@
 import datetime
-import subprocess
 import logging
 import os
 import signal
@@ -123,8 +122,8 @@ class Window(QDialog):
         # 下面就是创建一个表
         conn.execute("create table if not exists User (Username VARCHAR(20) PRIMARY KEY, Password VARCHAR(20))") 
         # 插入数据
-        conn.execute("insert into User(Username,Password) values ('wxc', 'wxc123')")
-        conn.execute("insert into User(Username,Password) values ('jmj', 'jmj123')")
+        #conn.execute("insert into User(Username,Password) values ('wxc', 'wxc123')")
+        #conn.execute("insert into User(Username,Password) values ('jmj', 'jmj123')")
         # 如果隔离级别不是自动提交就需要手动执行commit
         conn.commit()
         # 获取到游标对象

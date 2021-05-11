@@ -9,3 +9,8 @@ python-dateutil==2.8.1
 sanic==21.3.4
 scipy==1.5.4
 websockets==8.1
+
+
+
+pip --trusted-host pypi.python.org install coloma -i http://pypi.doubanio.com/simple/
+pip3 install colorma==0.4.4 -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com
