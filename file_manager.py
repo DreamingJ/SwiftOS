@@ -356,9 +356,11 @@ class FileManager:
                     # 相对路径
                     if file_path[0] != self.file_separator:
                         gf_path = self.root_path + self.current_working_path + file_path
+                        print("*******1"+gf_path)
                     # 绝对路径
                     else:
                         gf_path = self.root_path + file_path
+                        print("*******2"+gf_path)
 
                     seek_queue = self.fpToLoc(file_path)
                     print(seek_queue)
