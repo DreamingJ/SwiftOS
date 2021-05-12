@@ -1,20 +1,16 @@
 # coding=utf-8
 
-import signal
 from colorama import init
-from time import sleep
 from shell import Shell
 from file_manager import FileManager
 from memory_manager import MemoryManager
 from process_manager import ProcessManager
 from config import *
-from devices import Printer, Disk
+from devices import Printer
 import os
 import sys
 import threading
-import logging
 import datetime
-#from . import config
 
 
 class Kernel:
@@ -24,7 +20,6 @@ class Kernel:
         self.my_shell = Shell()
         self.username = sys.argv[1]
         self.my_printer = Printer()
-        self.my_disk = Disk()
         self.my_filemanager = FileManager(storage_block_size,
                                           storage_track_num, storage_sec_num,
                                           seek_algo, self.username)
@@ -221,16 +216,16 @@ class Kernel:
 
 if __name__ == '__main__':
 
-    _logFmt = logging.Formatter(
-        '%(asctime)s %(levelname).1s %(lineno)-3d %(funcName)-20s %(message)s',
-        datefmt='%H:%M:%S')
-    _consoleHandler = logging.StreamHandler()
-    _consoleHandler.setLevel(logging.DEBUG)
-    _consoleHandler.setFormatter(_logFmt)
+    # _logFmt = logging.Formatter(
+    #     '%(asctime)s %(levelname).1s %(lineno)-3d %(funcName)-20s %(message)s',
+    #     datefmt='%H:%M:%S')
+    # _consoleHandler = logging.StreamHandler()
+    # _consoleHandler.setLevel(logging.DEBUG)
+    # _consoleHandler.setFormatter(_logFmt)
 
-    log = logging.getLogger(__file__)
-    log.addHandler(_consoleHandler)
-    log.setLevel(logging.DEBUG)
+    # log = logging.getLogger(__file__)
+    # log.addHandler(_consoleHandler)
+    # log.setLevel(logging.DEBUG)
 
     init(autoreset=True)
     my_kernel = Kernel()
